@@ -1,0 +1,10 @@
+{
+  "name": "file-upload-lab",
+  "version": "1.0.0",
+  "description": "Lab do testów bezpiecznego uploadu plików",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
+  }
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab - Upload Plików (Bezpieczeństwo Aplikacji)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="card">
+    <h2>Panel Testowy Uploadu Plików</h2>
+    <p class="subtitle">Środowisko laboratoryjne do analizy podatności</p>
+
+    <form id="uploadForm">
+        <!-- Obszar Drag and Drop -->
+        <div id="dropZone" class="drop-zone">
+            <div class="drop-zone-icon">📁</div>
+            <span id="dropZoneText">Przeciągnij plik tutaj lub <span class="browse-link">wybierz z dysku</span></span>
+            <input type="file" name="file" id="file" required style="display: none;">
+        </div>
+
+        <div id="fileInfo" class="file-info" style="display: none;">
+            <span>Wybrany plik:</span> <strong id="fileName"></strong>
+        </div>
+
+        <button type="submit" id="submitBtn">Prześlij plik</button>
+    </form>
+
+    <div id="responseMessage"></div>
+</div>
+
+<script>
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('file');
+    const dropZone = document.getElementById('dropZone');
+    const dropZoneText = document.getElementById('dropZoneText');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileNameSpan = document.getElementById('fileName');
+    const responseMessage = document.getElementById('responseMessage');
+    const submitBtn = document.getElementById('submitBtn');
+
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    // Obsługa wyboru przez standardowy input
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            showFile(fileInput.files[0]);
+        }
+    });
+
+    //drag n drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    // Podświetlenie obszaru przy najechaniu
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+    });
+
+    //drag n drop
+    dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files; // Przypisanie do ukrytego inputa
+            showFile(files[0]);
+        }
+    });
+
+    function showFile(file) {
+        const sizeKB = (file.size / 1024).toFixed(1);
+        fileNameSpan.textContent = `${file.name} (${sizeKB} KB)`;
+        fileInfo.style.display = 'block';
+        dropZone.style.borderColor = '#28a745';
+        dropZone.style.background = '#f1f8f5';
+    }
+
+    //wysyłanie formularza asynchronicznie (AJAX)
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(form);
+        responseMessage.style.display = 'block';
+        responseMessage.className = '';
+        responseMessage.textContent = 'Przesyłanie pliku...';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                responseMessage.className = 'success';
+                responseMessage.innerHTML = `<strong>Sukces!</strong> ${result.message}<br><small>Zapisano jako: <strong>${result.filename}</strong> (${result.size} bajtów)</small>`;
+            } else {
+                responseMessage.className = 'error';
+                responseMessage.innerHTML = `<strong>Błąd:</strong> ${result.error || 'Nie udało się przesłać pliku.'}`;
+            }
+        } catch (error) {
+            responseMessage.className = 'error';
+            responseMessage.innerHTML = `<strong>Błąd sieci:</strong> ${error.message}`;
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>
